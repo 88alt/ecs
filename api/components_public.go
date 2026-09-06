@@ -6,6 +6,8 @@ import (
 	"context"
 	"fmt"
 	"time"
+
+	speedmodel "github.com/oneclickvirt/speedtest/model"
 )
 
 func hasPrivateComponentData() bool { return false }
@@ -18,6 +20,10 @@ func loadSecurityComponentData(ctx context.Context, _ bool) componentDataResult 
 func loadPrivateSpeedComponentData(ctx context.Context, _ bool) componentDataResult {
 	err := fmt.Errorf("private speed component unavailable in public build")
 	return failedComponentData(ctx, privateDataFile, err)
+}
+
+func loadPrivateSpeedComponentDataWithNetwork(ctx context.Context, offline bool, _ speedmodel.Network) componentDataResult {
+	return loadPrivateSpeedComponentData(ctx, offline)
 }
 
 func loadTransferComponentData(ctx context.Context, _ bool) componentDataResult {
