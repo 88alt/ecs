@@ -52,3 +52,22 @@ func runInternationalPrivateSpeedBenchmarks(context.Context, int) (any, int, []p
 func runEmbeddedInternationalPrivateSpeedBenchmarks(context.Context, int) (any, int, []privateSpeedBenchmark) {
 	return nil, 0, nil
 }
+
+// The public build keeps the same family-aware adapter contract as the
+// private build.  Private registry work is intentionally unavailable here,
+// so each network-aware entry point remains a no-op compatibility stub.
+func runPrivateSpeedBenchmarksWithNetwork(ctx context.Context, limit int, _ speedmodel.Network) (any, int, []privateSpeedBenchmark) {
+	return runPrivateSpeedBenchmarks(ctx, limit)
+}
+
+func runEmbeddedPrivateSpeedBenchmarksWithNetwork(ctx context.Context, limit int, _ speedmodel.Network) (any, int, []privateSpeedBenchmark) {
+	return runEmbeddedPrivateSpeedBenchmarks(ctx, limit)
+}
+
+func runInternationalPrivateSpeedBenchmarksWithNetwork(ctx context.Context, limit int, _ speedmodel.Network) (any, int, []privateSpeedBenchmark) {
+	return runInternationalPrivateSpeedBenchmarks(ctx, limit)
+}
+
+func runEmbeddedInternationalPrivateSpeedBenchmarksWithNetwork(ctx context.Context, limit int, _ speedmodel.Network) (any, int, []privateSpeedBenchmark) {
+	return runEmbeddedInternationalPrivateSpeedBenchmarks(ctx, limit)
+}

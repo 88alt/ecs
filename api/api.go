@@ -5,7 +5,7 @@ const (
 	Version = "v1.0.0"
 
 	// DefaultVersion 默认的ECS版本号
-	DefaultVersion = "v0.1.199"
+	DefaultVersion = "v0.1.200"
 )
 
 // 测试方法常量

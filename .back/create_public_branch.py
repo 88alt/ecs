@@ -135,12 +135,16 @@ def modify_speed_go(filepath):
         content,
         count=1,
     )
-    forbidden = re.compile(
-        r'privatespeedtest|privateSpeed|privatepst|private[_-]speed',
+    # The public adapter intentionally keeps the PrivateSpeedPreloads type and
+    # its no-op functions so the runner has the same API under both build tags.
+    # Validate the actual dependency boundary instead of rejecting those
+    # compatibility identifiers by substring.
+    private_import = re.compile(
+        r'github\.com/oneclickvirt/(?:privatespeedtest|security)(?:/|["`])',
         flags=re.IGNORECASE,
     )
-    if forbidden.search(content):
-        raise ValueError(f"Public speed implementation contains restricted markers: {public_filepath}")
+    if private_import.search(content):
+        raise ValueError(f"Public speed implementation imports a restricted module: {public_filepath}")
 
     write_file(filepath, content)
     print(f"✓ Replaced private speed implementation in {filepath}")
