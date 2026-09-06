@@ -149,6 +149,59 @@ def modify_speed_go(filepath):
     write_file(filepath, content)
     print(f"✓ Replaced private speed implementation in {filepath}")
 
+
+def activate_public_component(filepath):
+    """Make a public-only implementation available to ordinary Go builds."""
+    content = read_file(filepath)
+    content, replacements = re.subn(
+        r'(?m)^//go:build\s+ecs_public\s*\n(?:^// \+build\s+ecs_public\s*\n)?\n?',
+        '',
+        content,
+        count=1,
+    )
+    if replacements != 1:
+        raise ValueError(f"Unexpected public build tag in {filepath}")
+    write_file(filepath, content)
+    print(f"✓ Activated public implementation for default builds: {filepath}")
+
+
+def remove_private_go_sources():
+    """Remove source files whose dependencies are intentionally private."""
+    private_files = [
+        'api/components_security_private.go',
+        'api/components_speed_private.go',
+        'api/components_local_test.go',
+        'goecs_private_test.go',
+        'internal/tests/speed_private_registry.go',
+        'internal/tests/speed_test.go',
+    ]
+    for filepath in private_files:
+        if not os.path.isfile(filepath):
+            raise FileNotFoundError(f"Private source expected by public generator is missing: {filepath}")
+        os.remove(filepath)
+        print(f"✓ Removed private source: {filepath}")
+
+
+def validate_public_go_sources(root='.'):
+    """Fail closed when a new private Go import was missed by the generator."""
+    private_import = re.compile(
+        r'"github\.com/oneclickvirt/(?:privatespeedtest|security)(?:/|\")',
+        flags=re.IGNORECASE,
+    )
+    matches = []
+    ignored_directories = {'.git', 'vendor', '.cache', '.tmp'}
+    for directory, directories, filenames in os.walk(root):
+        directories[:] = [name for name in directories if name not in ignored_directories]
+        for filename in filenames:
+            if not filename.endswith('.go'):
+                continue
+            filepath = os.path.join(directory, filename)
+            if private_import.search(read_file(filepath)):
+                matches.append(filepath)
+    if matches:
+        raise ValueError(f"Public Go source still imports restricted modules: {', '.join(matches)}")
+
+
 def modify_utils_go(filepath):
     """
     Modify utils/utils.go to:
@@ -348,8 +401,11 @@ def main():
     # Modify Go source files
     print("Modifying Go source files...")
     modify_speed_go('internal/tests/speed.go')
+    activate_public_component('api/components_public.go')
+    remove_private_go_sources()
     modify_utils_go('utils/utils.go')
     modify_params_go('internal/params/params.go')
+    validate_public_go_sources()
     sanitize_public_markdown()
     print()
     

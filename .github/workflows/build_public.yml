@@ -102,18 +102,21 @@ jobs:
         
     - name: Remove security package references
       if: steps.release.outputs.publish == 'true'
-      env:
-        GOFLAGS: "-mod=mod -tags=ecs_public"
       run: |
         set -euo pipefail
         python3 .back/create_public_branch.py
+        go mod tidy
         go clean -cache -testcache -fuzzcache
-        if grep -n -E 'github\.com/oneclickvirt/(security|privatespeedtest)' go.mod; then
-          echo "Public go.mod still requires private modules" >&2
+        if grep -n -E 'github\.com/oneclickvirt/(security|privatespeedtest)' go.mod go.sum; then
+          echo "Public module metadata still references private modules" >&2
           exit 1
         fi
         if go list -deps ./... | grep -E '^github\.com/oneclickvirt/(security|privatespeedtest)(/|$)'; then
-          echo "Public build dependency graph still loads private modules" >&2
+          echo "Default public build dependency graph still loads private modules" >&2
+          exit 1
+        fi
+        if go list -tags=ecs_public -deps ./... | grep -E '^github\.com/oneclickvirt/(security|privatespeedtest)(/|$)'; then
+          echo "Tagged public build dependency graph still loads private modules" >&2
           exit 1
         fi
         python3 - <<'PY'
@@ -139,8 +142,6 @@ jobs:
         PY
     - name: Build and Test
       if: steps.release.outputs.publish == 'true'
-      env:
-        GOFLAGS: "-mod=mod -tags=ecs_public"
       run: |
         set -euo pipefail
         go test ./...
@@ -173,6 +174,9 @@ jobs:
         if any(marker in encoded for marker in ("privatespeedtest", "dnsbl-zones", "openspeedtest-servers")):
             raise SystemExit("public canary exposed private registry details")
         PY
+        go test -tags=ecs_public ./...
+        go build -tags=ecs_public -ldflags="-checklinkname=0" -o maintest-ecs-public
+        ./maintest-ecs-public -h >/dev/null
         rm -f maintest public-canary.json
         
     - name: Commit and push changes
